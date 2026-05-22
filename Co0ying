@@ -1,0 +1,365 @@
+Your Current Access Control Flow (From Diagram)
+
+Current model appears to be:
+
+Google Workspace (IDP)
+        ↓
+SAML SSO Authentication
+        ↓
+SCIM User & Group Provisioning
+        ↓
+Databricks Workspace
+        ↓
+Unity Catalog Permissions
+
+This is the RIGHT high-level architecture.
+
+2. What You Are Doing Correctly
+A. Centralized Identity Provider (Google Workspace)
+
+Correct approach.
+
+Why:
+
+Single source of truth
+Easy onboarding/offboarding
+Central governance
+Enterprise MFA policies
+
+This avoids:
+
+Separate Databricks users/passwords
+
+which is bad practice.
+
+3. SAML for Authentication
+
+Correct.
+
+SAML SSO is standard enterprise authentication for Databricks.
+
+Flow:
+
+User → Google Login → MFA → Databricks
+
+Good because:
+
+No local credentials
+Centralized authentication
+Security compliance
+4. SCIM Provisioning
+
+VERY good approach.
+
+This is one of the most important parts.
+
+Why:
+
+Automatic user creation
+Automatic deactivation
+Automatic group synchronization
+
+Without SCIM:
+
+Manual user management becomes nightmare.
+
+For a global Holcim project, SCIM is essential.
+
+5. Group-Based Access Control
+
+This is the MOST correct thing in your design.
+
+You are using:
+
+Google Groups → Databricks Groups → Permissions
+
+This is exactly how enterprise governance should work.
+
+You should NEVER do:
+
+GRANT SELECT TO rajesh@company.com
+
+Instead:
+
+GRANT SELECT ON SCHEMA finance TO finance_analyst_group;
+
+That is scalable.
+
+6. Unity Catalog Based Permissions
+
+Correct and modern.
+
+Unity Catalog should become:
+
+Central governance layer
+Fine-grained security layer
+
+This is MUCH better than:
+
+Legacy Hive Metastore ACLs
+Workspace-local permissions
+7. What I Think You SHOULD Structure Properly
+
+This is where many projects fail.
+
+8. Recommended Access Model
+
+You should structure permissions in layers.
+
+Layer 1 — Workspace Access
+
+Controls:
+
+Who can log into workspace
+
+Examples:
+
+Group	Access
+de-emea	EMEA Workspace
+ds-global	DS Workspace
+analysts-finance	SQL only
+
+This is coarse-grained access.
+
+Layer 2 — Catalog Access
+
+Controls:
+
+Domain-level access
+
+Example:
+
+finance_catalog
+sales_catalog
+manufacturing_catalog
+
+Permissions:
+
+GRANT USE CATALOG
+Layer 3 — Schema Access
+
+Controls:
+
+Functional segmentation
+
+Example:
+
+finance.raw
+finance.staging
+finance.gold
+Layer 4 — Table/View Access
+
+Controls:
+
+Sensitive datasets
+
+Example:
+
+GRANT SELECT ON VIEW finance.customer_masked
+Layer 5 — Row/Column Level Security
+
+VERY important for enterprise.
+
+Especially:
+
+HR
+Finance
+Regional data restrictions
+
+Example:
+
+APAC users only see APAC data
+Salary columns masked
+
+Unity Catalog supports:
+
+Row filters
+Column masking
+
+You should definitely include this in design.
+
+9. BIGGEST THING I WOULD CHANGE/ENSURE
+
+Your diagram currently emphasizes:
+
+Workspace-level access
+
+But modern Databricks governance should focus MORE on:
+
+DATA ACCESS CONTROL
+
+instead of
+
+WORKSPACE ACCESS CONTROL
+
+This is extremely important.
+
+10. Ideal Enterprise Model
+
+Users may access same workspace BUT:
+
+only see authorized catalogs/tables.
+
+This reduces:
+
+Workspace sprawl
+Cost
+Operational complexity
+11. Recommended Group Hierarchy
+
+This is very important for scalability.
+
+Instead of:
+
+finance_users
+
+Use structured naming:
+
+dlk-emea-finance-read
+dlk-emea-finance-write
+dlk-global-admin
+dlk-apac-analyst
+
+This helps:
+
+Automation
+Terraform
+Auditing
+RBAC clarity
+12. Separation of Duties (Critical)
+
+Ensure these are separated:
+
+Role	Responsibility
+Platform Admin	Infra
+Data Engineer	Pipelines
+Analyst	Read only
+Data Scientist	ML access
+Governance Team	Policies
+
+Do NOT make everyone workspace admin.
+
+Very common mistake.
+
+13. Environment Separation
+
+You mentioned environments in architecture.
+
+Access should also be environment-aware.
+
+Example:
+
+Environment	Access
+Dev	Wider
+QA	Controlled
+Prod	Strict
+
+Production write access should be VERY limited.
+
+14. Service Principals
+
+I don’t explicitly see this in diagram but you NEED it.
+
+For:
+
+Airflow
+CI/CD
+dbt jobs
+Automation
+
+Never use personal user accounts for pipelines.
+
+Use:
+
+Service Principals / Managed Identities
+
+Critical enterprise practice.
+
+15. CI/CD Governance
+
+Ensure:
+
+Terraform manages permissions
+No manual grants in production
+
+Otherwise governance becomes unmanageable.
+
+Best practice:
+
+IAM as Code
+16. Data Product Ownership (Very Important)
+
+Since architecture is Data Mesh style:
+
+Each domain should own:
+
+Its schemas
+Its grants
+Its policies
+
+Example:
+
+Finance owns finance_catalog
+
+not centralized admin team.
+
+This is key Data Mesh principle.
+
+17. My Overall Assessment
+
+Your approach is architecturally correct and modern.
+
+Especially good:
+
+SSO
+SCIM
+Group-based RBAC
+Unity Catalog
+Centralized identity
+MFA
+
+That is exactly how large enterprises build Databricks governance now.
+
+18. What Would Make It Enterprise-Grade
+
+Add/ensure:
+
+Row-level security
+Column masking
+Service principals
+Terraform-based IAM
+Least privilege model
+Environment isolation
+Catalog-centric governance
+Audit logging
+19. One Very Important Suggestion
+
+Since this is Deloitte + Holcim global project:
+
+Strongly avoid:
+
+Region-based duplicated governance everywhere
+
+Try:
+
+Central governance standards
++ domain ownership
+
+Otherwise governance becomes extremely hard at scale.
+
+20. Final Verdict
+
+Your access control approach is fundamentally correct and follows modern enterprise architecture patterns.
+
+It aligns with:
+
+Databricks recommended practices
+Enterprise IAM
+Data Mesh governance
+Lakehouse security model
+
+The main thing is to ensure:
+
+governance is data-centric,
+not workspace-centric,
+and permissions are automated and scalable.
