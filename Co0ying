@@ -1,3 +1,17 @@
+Google Workspace (IDP)
+        ↓
+SAML + MFA
+        ↓
+SCIM Provisioning
+        ↓
+Databricks Environment Workspaces
+   (DEV / QA / PROD)
+        ↓
+Unity Catalog
+        ↓
+Catalog / Schema / Table Permissions
+        ↓
+Data Products
 Your Current Access Control Flow (From Diagram)
 
 Current model appears to be:
