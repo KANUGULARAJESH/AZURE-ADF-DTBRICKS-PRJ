@@ -1,379 +1,679 @@
-Google Workspace (IDP)
-        ↓
-SAML + MFA
-        ↓
-SCIM Provisioning
-        ↓
-Databricks Environment Workspaces
-   (DEV / QA / PROD)
-        ↓
-Unity Catalog
-        ↓
-Catalog / Schema / Table Permissions
-        ↓
-Data Products
-Your Current Access Control Flow (From Diagram)
+# Holcim Unified Data Platform (UDP)
 
-Current model appears to be:
+# Databricks Access Control, Authentication & Environment Architecture
 
-Google Workspace (IDP)
-        ↓
-SAML SSO Authentication
-        ↓
-SCIM User & Group Provisioning
-        ↓
-Databricks Workspace
-        ↓
-Unity Catalog Permissions
+## 1. Purpose of This Document
 
-This is the RIGHT high-level architecture.
+This document explains the proposed enterprise architecture approach for the Holcim Unified Data Platform (UDP) implemented on Databricks.
 
-2. What You Are Doing Correctly
-A. Centralized Identity Provider (Google Workspace)
+The objective of this document is to provide:
 
-Correct approach.
+* Clear understanding of the authentication flow
+* Access control and governance model
+* Environment isolation strategy
+* S3 storage architecture
+* Unity Catalog governance approach
+* Enterprise security best practices
+* Recommended operational model
 
-Why:
+This document can be shared with:
 
-Single source of truth
-Easy onboarding/offboarding
-Central governance
-Enterprise MFA policies
+* Client stakeholders
+* Deloitte teams
+* Platform engineering teams
+* Security teams
+* Data engineering teams
+* Governance and compliance teams
 
-This avoids:
+---
 
-Separate Databricks users/passwords
+# 2. High-Level Architecture Overview
 
-which is bad practice.
+The Holcim platform is designed as a modern enterprise lakehouse architecture using Databricks.
 
-3. SAML for Authentication
+The platform supports:
 
-Correct.
+* Enterprise data ingestion
+* Centralized governance
+* Domain-driven data products
+* Analytics and reporting
+* AI/ML and GenAI use cases
+* Secure enterprise access control
+* Environment isolation
+* Automated provisioning and governance
 
-SAML SSO is standard enterprise authentication for Databricks.
+Core technologies involved:
 
-Flow:
+| Area                    | Technology           |
+| ----------------------- | -------------------- |
+| Compute & Processing    | Databricks           |
+| Storage                 | Amazon S3            |
+| Governance              | Unity Catalog        |
+| Authentication          | Google Workspace SSO |
+| Provisioning            | SCIM                 |
+| Orchestration           | Airflow              |
+| Transformation          | PySpark / dbt        |
+| Identity Federation     | SAML 2.0             |
+| Infrastructure Security | IAM Roles            |
 
-User → Google Login → MFA → Databricks
+---
 
-Good because:
+# 3. Authentication & Identity Management Architecture
 
-No local credentials
-Centralized authentication
-Security compliance
-4. SCIM Provisioning
+## 3.1 Objective
 
-VERY good approach.
+The authentication architecture is designed to provide:
 
-This is one of the most important parts.
+* Secure enterprise login
+* Centralized identity management
+* Single Sign-On (SSO)
+* Multi-factor authentication (MFA)
+* Automated user provisioning
+* Group-based access control
+* Centralized governance and auditing
 
-Why:
+Google Workspace acts as the centralized Identity Provider (IdP).
 
-Automatic user creation
-Automatic deactivation
-Automatic group synchronization
+Databricks relies on Google Workspace for:
+
+* User authentication
+* User lifecycle management
+* Group synchronization
+* Role mapping
+
+---
+
+# 4. Authentication Flow
+
+## 4.1 End-to-End Authentication Flow
+
+The following steps describe the authentication process.
+
+### Step 1 – User Opens Databricks Workspace
+
+The user accesses the Databricks workspace URL.
+
+Example:
+
+[https://holcim-prod.cloud.databricks.com](https://holcim-prod.cloud.databricks.com)
+
+---
+
+### Step 2 – Databricks Redirects User to Google Login
+
+Since SSO is enabled, Databricks redirects the user to Google Workspace authentication.
+
+Databricks does not manage local passwords.
+
+Authentication is delegated to Google Workspace.
+
+---
+
+### Step 3 – User Authenticates Using Google Credentials
+
+The user enters enterprise Google Workspace credentials.
+
+Enterprise security controls are enforced:
+
+* MFA
+* Password policies
+* Device policies
+* Session controls
+* Conditional access
+
+---
+
+### Step 4 – Google Sends SAML Assertion to Databricks
+
+After successful authentication, Google Workspace sends a signed SAML assertion to Databricks.
+
+The assertion contains:
+
+* User identity
+* Email
+* User attributes
+* Group information
+* Authentication status
+
+---
+
+### Step 5 – Databricks Validates SAML Assertion
+
+Databricks validates:
+
+* Signature authenticity
+* Token validity
+* Trusted Identity Provider
+* User mapping
+
+If validation succeeds, access is granted.
+
+---
+
+### Step 6 – Workspace Access Granted
+
+The user gains access to the appropriate Databricks workspace.
+
+Actual data access is controlled separately through:
+
+* Unity Catalog
+* Groups
+* Catalog permissions
+* Schema permissions
+* Table permissions
+
+---
+
+# 5. SAML-Based Single Sign-On (SSO)
+
+## 5.1 Why SAML is Used
+
+SAML 2.0 is used to enable enterprise-grade Single Sign-On.
+
+Benefits:
+
+* Centralized authentication
+* No local Databricks passwords
+* Enterprise MFA enforcement
+* Simplified user experience
+* Improved security posture
+* Easier auditing and compliance
+
+---
+
+## 5.2 Databricks SSO Configuration
+
+The following configuration is typically performed in the Databricks Account Console.
+
+### Databricks SSO Configuration Steps
+
+1. Enable SAML Authentication
+2. Upload Google IdP metadata
+3. Configure Assertion Consumer Service (ACS) URL
+4. Configure Entity ID
+5. Configure redirect URLs
+6. Configure user attribute mapping
+7. Validate trust relationship
+
+---
+
+## 5.3 Google Workspace Configuration
+
+The following configuration is typically performed in Google Admin Console.
+
+### Google Workspace SAML Configuration Steps
+
+1. Create custom SAML application
+2. Configure Databricks ACS URL
+3. Configure Entity ID
+4. Configure Name ID mapping
+5. Configure attribute mappings
+6. Enable application for users/groups
+
+Mapped attributes typically include:
+
+| Attribute | Purpose             |
+| --------- | ------------------- |
+| email     | User identification |
+| firstName | User profile        |
+| lastName  | User profile        |
+| groups    | Access management   |
+
+---
+
+# 6. SCIM Provisioning Architecture
+
+## 6.1 Purpose of SCIM
+
+SSO handles authentication only.
+
+SCIM is used for:
+
+* User provisioning
+* User deprovisioning
+* Group synchronization
+* Automated onboarding/offboarding
+* Role and access synchronization
 
 Without SCIM:
 
-Manual user management becomes nightmare.
+* Users must be manually created
+* Groups must be manually managed
+* Offboarding becomes operationally difficult
+* Governance risks increase
 
-For a global Holcim project, SCIM is essential.
+---
 
-5. Group-Based Access Control
+## 6.2 SCIM Provisioning Flow
 
-This is the MOST correct thing in your design.
+### Step 1 – User Created in Google Workspace
 
-You are using:
+A new enterprise user is created in Google Workspace.
 
-Google Groups → Databricks Groups → Permissions
+---
 
-This is exactly how enterprise governance should work.
+### Step 2 – SCIM Sync Triggered
 
-You should NEVER do:
+SCIM automatically synchronizes:
 
-GRANT SELECT TO rajesh@company.com
+* User identity
+* Group memberships
+* Access mappings
 
-Instead:
+---
 
-GRANT SELECT ON SCHEMA finance TO finance_analyst_group;
+### Step 3 – User Created in Databricks
 
-That is scalable.
+The user is automatically provisioned in Databricks.
 
-6. Unity Catalog Based Permissions
+No manual administration required.
 
-Correct and modern.
+---
 
-Unity Catalog should become:
+### Step 4 – Group Memberships Assigned
 
-Central governance layer
-Fine-grained security layer
-
-This is MUCH better than:
-
-Legacy Hive Metastore ACLs
-Workspace-local permissions
-7. What I Think You SHOULD Structure Properly
-
-This is where many projects fail.
-
-8. Recommended Access Model
-
-You should structure permissions in layers.
-
-Layer 1 — Workspace Access
-
-Controls:
-
-Who can log into workspace
-
-Examples:
-
-Group	Access
-de-emea	EMEA Workspace
-ds-global	DS Workspace
-analysts-finance	SQL only
-
-This is coarse-grained access.
-
-Layer 2 — Catalog Access
-
-Controls:
-
-Domain-level access
+Users inherit access based on enterprise groups.
 
 Example:
 
-finance_catalog
-sales_catalog
-manufacturing_catalog
+| Google Group           | Databricks Access       |
+| ---------------------- | ----------------------- |
+| grp_dlk_finance_read   | Finance read access     |
+| grp_dlk_sales_write    | Sales write access      |
+| grp_dlk_platform_admin | Platform administration |
 
-Permissions:
+---
 
-GRANT USE CATALOG
-Layer 3 — Schema Access
+### Step 5 – Automatic Deactivation
 
-Controls:
+When users leave the organization:
 
-Functional segmentation
+* Google account is disabled
+* SCIM removes access automatically
+* Databricks access revoked
 
-Example:
+This ensures governance compliance.
 
-finance.raw
-finance.staging
-finance.gold
-Layer 4 — Table/View Access
+---
 
-Controls:
+# 7. Recommended Access Control Model
 
-Sensitive datasets
+## 7.1 Enterprise RBAC (Role-Based Access Control)
 
-Example:
-
-GRANT SELECT ON VIEW finance.customer_masked
-Layer 5 — Row/Column Level Security
-
-VERY important for enterprise.
-
-Especially:
-
-HR
-Finance
-Regional data restrictions
-
-Example:
-
-APAC users only see APAC data
-Salary columns masked
-
-Unity Catalog supports:
-
-Row filters
-Column masking
-
-You should definitely include this in design.
-
-9. BIGGEST THING I WOULD CHANGE/ENSURE
-
-Your diagram currently emphasizes:
-
-Workspace-level access
-
-But modern Databricks governance should focus MORE on:
-
-DATA ACCESS CONTROL
-
-instead of
-
-WORKSPACE ACCESS CONTROL
-
-This is extremely important.
-
-10. Ideal Enterprise Model
-
-Users may access same workspace BUT:
-
-only see authorized catalogs/tables.
-
-This reduces:
-
-Workspace sprawl
-Cost
-Operational complexity
-11. Recommended Group Hierarchy
-
-This is very important for scalability.
-
-Instead of:
-
-finance_users
-
-Use structured naming:
-
-dlk-emea-finance-read
-dlk-emea-finance-write
-dlk-global-admin
-dlk-apac-analyst
-
-This helps:
-
-Automation
-Terraform
-Auditing
-RBAC clarity
-12. Separation of Duties (Critical)
-
-Ensure these are separated:
-
-Role	Responsibility
-Platform Admin	Infra
-Data Engineer	Pipelines
-Analyst	Read only
-Data Scientist	ML access
-Governance Team	Policies
-
-Do NOT make everyone workspace admin.
-
-Very common mistake.
-
-13. Environment Separation
-
-You mentioned environments in architecture.
-
-Access should also be environment-aware.
-
-Example:
-
-Environment	Access
-Dev	Wider
-QA	Controlled
-Prod	Strict
-
-Production write access should be VERY limited.
-
-14. Service Principals
-
-I don’t explicitly see this in diagram but you NEED it.
-
-For:
-
-Airflow
-CI/CD
-dbt jobs
-Automation
-
-Never use personal user accounts for pipelines.
-
-Use:
-
-Service Principals / Managed Identities
-
-Critical enterprise practice.
-
-15. CI/CD Governance
-
-Ensure:
-
-Terraform manages permissions
-No manual grants in production
-
-Otherwise governance becomes unmanageable.
+The platform follows a group-based RBAC model.
 
 Best practice:
 
-IAM as Code
-16. Data Product Ownership (Very Important)
+* No direct user permissions
+* Permissions granted only to groups
+* Centralized group management
+* Least privilege principle
 
-Since architecture is Data Mesh style:
+---
 
-Each domain should own:
+## 7.2 Recommended Access Hierarchy
 
-Its schemas
-Its grants
-Its policies
+The recommended hierarchy is:
+
+User
+→ Google Group
+→ Databricks Group
+→ Unity Catalog Permission
+→ Data Access
+
+---
+
+## 7.3 Example Group Naming Standards
+
+Recommended naming convention:
+
+| Group Name              | Purpose                 |
+| ----------------------- | ----------------------- |
+| grp_dlk_finance_read    | Finance read access     |
+| grp_dlk_finance_write   | Finance write access    |
+| grp_dlk_sales_read      | Sales read access       |
+| grp_dlk_ds_ml_engineers | ML engineering access   |
+| grp_dlk_platform_admin  | Platform administration |
+
+This approach improves:
+
+* Governance
+* Auditability
+* Automation
+* CI/CD integration
+* Operational scalability
+
+---
+
+# 8. Environment Isolation Strategy
+
+## 8.1 Recommended Enterprise Approach
+
+The platform uses separate Databricks workspaces for each environment.
+
+Recommended environments:
+
+| Environment | Purpose                |
+| ----------- | ---------------------- |
+| DEV         | Development            |
+| QA          | Testing and validation |
+| PROD        | Production workloads   |
+
+---
+
+## 8.2 Why Separate Workspaces Per Environment
+
+This approach provides:
+
+* Strong environment isolation
+* Reduced operational risk
+* Safer production management
+* Independent compute configuration
+* Independent access control
+* Easier CI/CD implementation
+* Better audit and governance separation
+
+---
+
+## 8.3 Example Workspace Structure
+
+| Workspace   | Example     |
+| ----------- | ----------- |
+| Development | holcim-dev  |
+| QA          | holcim-qa   |
+| Production  | holcim-prod |
+
+---
+
+# 9. S3 Storage Architecture
+
+## 9.1 Recommended Enterprise Storage Design
+
+The recommended approach is:
+
+Separate S3 buckets per environment.
 
 Example:
 
-Finance owns finance_catalog
+| Environment | Bucket                |
+| ----------- | --------------------- |
+| DEV         | s3://holcim-dev-data  |
+| QA          | s3://holcim-qa-data   |
+| PROD        | s3://holcim-prod-data |
 
-not centralized admin team.
+---
 
-This is key Data Mesh principle.
+## 9.2 Why Separate Buckets Per Environment
 
-17. My Overall Assessment
+Benefits include:
 
-Your approach is architecturally correct and modern.
+### Security Isolation
 
-Especially good:
+Production data remains isolated from non-production environments.
 
-SSO
-SCIM
-Group-based RBAC
-Unity Catalog
-Centralized identity
-MFA
+---
 
-That is exactly how large enterprises build Databricks governance now.
+### Easier IAM Management
 
-18. What Would Make It Enterprise-Grade
+Bucket-level IAM policies simplify access management.
 
-Add/ensure:
+---
 
-Row-level security
-Column masking
-Service principals
-Terraform-based IAM
-Least privilege model
-Environment isolation
-Catalog-centric governance
-Audit logging
-19. One Very Important Suggestion
+### Reduced Production Risk
 
-Since this is Deloitte + Holcim global project:
+Prevents accidental modification of production data.
 
-Strongly avoid:
+---
 
-Region-based duplicated governance everywhere
+### Better Governance
 
-Try:
+Supports:
 
-Central governance standards
-+ domain ownership
+* Independent retention policies
+* Encryption policies
+* Audit policies
+* Lifecycle policies
 
-Otherwise governance becomes extremely hard at scale.
+---
 
-20. Final Verdict
+### Better Cost Management
 
-Your access control approach is fundamentally correct and follows modern enterprise architecture patterns.
+Enables separate cost tracking for:
 
-It aligns with:
+* DEV
+* QA
+* PROD
 
-Databricks recommended practices
-Enterprise IAM
-Data Mesh governance
-Lakehouse security model
+---
 
-The main thing is to ensure:
+# 10. Recommended S3 Structure
 
-governance is data-centric,
-not workspace-centric,
-and permissions are automated and scalable.
+Within each environment bucket:
+
+| Folder       | Purpose                    |
+| ------------ | -------------------------- |
+| raw/         | Raw ingestion layer        |
+| silver/      | Cleansed/transformed layer |
+| gold/        | Business curated layer     |
+| checkpoints/ | Streaming checkpoints      |
+| logs/        | Operational logs           |
+
+Example:
+
+s3://holcim-prod-data/raw/
+
+s3://holcim-prod-data/silver/
+
+s3://holcim-prod-data/gold/
+
+---
+
+# 11. Unity Catalog Governance Model
+
+## 11.1 Purpose of Unity Catalog
+
+Unity Catalog acts as the centralized governance layer.
+
+It provides:
+
+* Centralized access control
+* Data governance
+* Lineage tracking
+* Audit logging
+* Fine-grained permissions
+* Data discovery
+
+---
+
+## 11.2 Governance Philosophy
+
+The architecture follows:
+
+Data-centric governance
+instead of
+Workspace-centric governance.
+
+Meaning:
+
+Data security is controlled at:
+
+* Catalog level
+* Schema level
+* Table level
+* Row level
+* Column level
+
+---
+
+## 11.3 Recommended Catalog Structure
+
+Example:
+
+| Catalog               | Domain                     |
+| --------------------- | -------------------------- |
+| finance_catalog       | Finance                    |
+| sales_catalog         | Sales                      |
+| manufacturing_catalog | Manufacturing              |
+| shared_catalog        | Shared enterprise datasets |
+
+---
+
+## 11.4 Recommended Schema Structure
+
+Within each catalog:
+
+| Schema  | Purpose                 |
+| ------- | ----------------------- |
+| raw     | Raw ingestion data      |
+| silver  | Cleansed data           |
+| gold    | Business-ready data     |
+| sandbox | Analyst experimentation |
+
+---
+
+# 12. Recommended Permission Strategy
+
+## 12.1 Catalog-Level Permissions
+
+Example responsibilities:
+
+* Finance users access finance catalog
+* Sales users access sales catalog
+
+---
+
+## 12.2 Schema-Level Permissions
+
+Controls access to:
+
+* Raw data
+* Curated layers
+* Sandbox areas
+
+---
+
+## 12.3 Table-Level Permissions
+
+Provides fine-grained control for:
+
+* Sensitive tables
+* Restricted datasets
+* Operational datasets
+
+---
+
+## 12.4 Row-Level and Column-Level Security
+
+Recommended for:
+
+* Regional restrictions
+* Sensitive financial data
+* HR information
+* Compliance requirements
+
+Examples:
+
+* APAC users only see APAC data
+* Salary columns masked
+* Vendor users access restricted datasets only
+
+---
+
+# 13. IAM Role-Based Storage Access
+
+## 13.1 Recommended Security Model
+
+The platform should use IAM role-based access.
+
+Databricks accesses S3 through:
+
+* IAM roles
+* Storage credentials
+* External locations
+
+---
+
+## 13.2 Important Security Principle
+
+No direct user access to S3.
+
+Users should access data only through:
+
+* Databricks
+* Unity Catalog
+* Governed access controls
+
+This improves:
+
+* Security
+* Governance
+* Auditing
+* Data protection
+
+---
+
+# 14. Service Principals & Automation
+
+## 14.1 Purpose
+
+Service principals should be used for:
+
+* Airflow orchestration
+* CI/CD pipelines
+* dbt execution
+* Automated jobs
+* APIs
+
+---
+
+## 14.2 Best Practice
+
+Avoid using personal user accounts for automation.
+
+Use dedicated service identities.
+
+Examples:
+
+| Service Principal | Purpose               |
+| ----------------- | --------------------- |
+| svc_airflow_prod  | Airflow orchestration |
+| svc_dbt_prod      | dbt execution         |
+| svc_ci_cd         | Deployment pipelines  |
+
+---
+
+# 15. Recommended Governance Best Practices
+
+## 15.1 Core Recommendations
+
+The recommended enterprise best practices are:
+
+* Separate workspaces per environment
+* Separate S3 buckets per environment
+* Centralized Unity Catalog governance
+* Google SSO + SCIM
+* Group-based RBAC
+* IAM role-based storage access
+* No direct user access to S3
+* Least privilege access model
+* Automated provisioning
+* Audit logging enabled
+* Row/column security for sensitive data
+
+---
+
+# 16. Recommended Final Architecture
+
+The proposed enterprise architecture is:
+
+Google Workspace (Identity Provider)
+↓
+SAML Authentication + MFA
+↓
+SCIM Provisioning
+↓
+Google Groups / RBAC
+↓
+Databricks Workspaces (DEV / QA / PROD)
+↓
+Unity Catalog Go
