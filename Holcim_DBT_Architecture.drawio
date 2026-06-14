@@ -1,0 +1,54 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Holcim DBT Architecture">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="dbtlayer" value="DBT LAYER" style="swimlane;html=1;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="1400" height="900" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="project" value="DBT PROJECT" style="swimlane;html=1;" vertex="1" parent="dbtlayer">
+          <mxGeometry x="40" y="40" width="1000" height="620" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="sources" value="DBT Sources&#10;&#10;EMEA_erp_dev_bronze&#10;EMEA_logistics_dev_bronze&#10;EMEA_masterdata_dev_bronze&#10;&#10;EMEA_erp_qa_bronze&#10;EMEA_logistics_qa_bronze&#10;&#10;sources.yml" style="swimlane;html=1;" vertex="1" parent="project">
+          <mxGeometry x="20" y="40" width="220" height="420" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="silver" value="models/silver&#10;&#10;stg_*&#10;int_*&#10;silver_customer&#10;silver_product&#10;silver_orders&#10;silver_shipments" style="swimlane;html=1;" vertex="1" parent="project">
+          <mxGeometry x="280" y="40" width="260" height="420" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="gold" value="models/gold&#10;&#10;fact_sales&#10;fact_inventory&#10;fact_shipments&#10;&#10;dim_customer&#10;dim_product&#10;dim_region&#10;&#10;kpi_sales&#10;kpi_logistics" style="swimlane;html=1;" vertex="1" parent="project">
+          <mxGeometry x="580" y="40" width="260" height="420" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="caps" value="DBT Capabilities&#10;&#10;Incremental Models&#10;Snapshots&#10;Lineage&#10;Documentation&#10;Data Quality" style="swimlane;html=1;" vertex="1" parent="project">
+          <mxGeometry x="860" y="40" width="120" height="420" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="tests" value="dbt tests" style="rounded=1;html=1;" vertex="1" parent="dbtlayer">
+          <mxGeometry x="220" y="700" width="150" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="seeds" value="dbt seeds" style="rounded=1;html=1;" vertex="1" parent="dbtlayer">
+          <mxGeometry x="420" y="700" width="150" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="macros" value="dbt macros" style="rounded=1;html=1;" vertex="1" parent="dbtlayer">
+          <mxGeometry x="620" y="700" width="150" height="60" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="silverlayer" value="SILVER LAYER (DBT)&#10;&#10;customer&#10;product&#10;orders&#10;shipments" style="swimlane;html=1;" vertex="1" parent="dbtlayer">
+          <mxGeometry x="1080" y="120" width="280" height="220" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="goldlayer" value="GOLD LAYER (DBT)&#10;&#10;Fact Tables&#10;Dimension Tables&#10;KPI Tables" style="swimlane;html=1;" vertex="1" parent="dbtlayer">
+          <mxGeometry x="1080" y="380" width="280" height="220" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
